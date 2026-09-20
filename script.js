@@ -18,55 +18,83 @@ let fetchedProducts = {};
 let currentOrderId = "";
 
 async function loadStoreProducts() {
-    const grid = document.getElementById('products-grid');
-    if(!grid) return;
+    const container = document.getElementById('categories-container');
+    if(!container) return;
 
     try {
         const q = query(collection(db, "items"), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
-        let html = '';
 
         if(querySnapshot.empty) {
-            grid.innerHTML = `<p class="text-gray-500 text-center col-span-2 text-xs py-8">ప్రస్తుతానికి ప్రొడక్ట్స్ ఏవీ అందుబాటులో లేవు.</p>`;
+            container.innerHTML = `<p class="text-gray-500 text-center text-xs py-8">ప్రస్తుతానికి ప్రొడక్ట్స్ ఏవీ అందుబాటులో లేవు.</p>`;
             return;
         }
+
+        // Group products by category
+        const categories = {
+            "SILK SAREES": [],
+            "PATTU SAREES": [],
+            "WORK SAREES": [],
+            "READYMADE": []
+        };
 
         querySnapshot.forEach((docSnap) => {
             const p = docSnap.data();
             const id = docSnap.id;
             fetchedProducts[id] = p;
-
-            const stock = Number(p.stock) || 0;
-            const isOut = stock <= 0;
-            const catalogBadge = p.catalog ? `<span class="bg-rose-50 text-rose-700 text-[9px] font-extrabold px-2 py-0.5 rounded-md inline-block mb-1 border border-rose-100">📁 ${p.catalog}</span>` : '';
-
-            html += `
-                <div class="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <div class="relative mb-2">
-                            <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-40 object-cover rounded-xl cursor-pointer hover:opacity-95 transition">
-                            <span class="absolute top-2 left-2 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow">${p.discount || 30}% off</span>
-                        </div>
-                        ${catalogBadge}
-                        <h3 class="font-bold text-xs text-gray-900 truncate">${p.name}</h3>
-                        <p class="text-[10px] text-gray-500 truncate mb-1">${p.description || ''}</p>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-rose-600 font-black text-sm">₹${p.price}</span>
-                            <span class="text-gray-400 text-[10px] line-through">₹${Math.round(p.price * 1.43)}</span>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold ${isOut ? 'text-red-600' : 'text-emerald-600'} mb-2">
-                            ${isOut ? '❌ Out of Stock' : `📦 Stock: ${stock} Left`}
-                        </p>
-                        <button onclick="addToCart('${id}')" ${isOut ? 'disabled' : ''} class="w-full ${isOut ? 'bg-gray-300 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow'} text-white py-1.5 rounded-xl text-xs font-bold transition">
-                            🛒 Add to Cart
-                        </button>
-                    </div>
-                </div>
-            `;
+            
+            let cat = p.catalog || "SILK SAREES";
+            if(!categories[cat]) categories[cat] = [];
+            categories[cat].push({ id, ...p });
         });
-        grid.innerHTML = html;
+
+        let mainHtml = '';
+
+        for (const [categoryName, products] of Object.entries(categories)) {
+            if (products.length === 0) continue;
+
+            mainHtml += `
+                <div class="mb-6 bg-white p-3 rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-sm font-black text-rose-700 mb-3 uppercase border-b pb-1.5 flex items-center gap-1.5">
+                        📂 ${categoryName}
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+            `;
+
+            products.forEach(p => {
+                const stock = Number(p.stock) || 0;
+                const isOut = stock <= 0;
+
+                mainHtml += `
+                    <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="relative mb-2">
+                                <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer hover:opacity-95 transition">
+                                <span class="absolute top-2 left-2 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">${p.discount || 30}% off</span>
+                            </div>
+                            <h3 class="font-bold text-xs text-gray-900 truncate">${p.name}</h3>
+                            <p class="text-[9px] text-gray-500 truncate mb-1">${p.description || ''}</p>
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <span class="text-rose-600 font-black text-xs">₹${p.price}</span>
+                                <span class="text-gray-400 text-[9px] line-through">₹${Math.round(p.price * 1.43)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-bold ${isOut ? 'text-red-600' : 'text-emerald-600'} mb-1.5">
+                                ${isOut ? '❌ Out of Stock' : `📦 Stock: ${stock} Left`}
+                            </p>
+                            <button onclick="addToCart('${p.id}')" ${isOut ? 'disabled' : ''} class="w-full ${isOut ? 'bg-gray-300 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 shadow'} text-white py-1.5 rounded-lg text-[10px] font-bold transition">
+                                🛒 Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            mainHtml += `</div></div>`;
+        }
+
+        container.innerHTML = mainHtml;
     } catch(e) {
         console.error("Error loading products: ", e);
     }
@@ -246,4 +274,4 @@ window.finishOrderWhatsApp = function() {
 window.onload = function() {
     loadStoreProducts();
 };
-      
+    
