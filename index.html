@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V T Textiles - Online Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 pb-20">
+    <!-- Header -->
+    <header class="bg-gray-900 text-white p-3 sticky top-0 z-40 shadow flex justify-between items-center">
+        <h1 class="text-sm font-black tracking-wide">V T TEXTILES</h1>
+        <div class="flex gap-2 items-center">
+            <a href="admin.html" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-gray-700">అడ్మిన్</a>
+            <button onclick="toggleCart()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                🛒 కార్ట్ (<span id="cart-count">0</span>)
+            </button>
+        </div>
+    </header>
+
+    <!-- Products Grid -->
+    <main class="container mx-auto p-3 max-w-xl">
+        <div id="products-grid" class="grid grid-cols-2 gap-3">
+            <p class="text-gray-500 text-center col-span-2 text-xs py-8">ప్రొడక్ట్స్ లోడ్ అవుతున్నాయి...</p>
+        </div>
+    </main>
+
+    <!-- Cart Drawer -->
+    <div id="cartDrawer" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex justify-end">
+        <div class="bg-white w-full max-w-xs h-full p-4 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-center border-b pb-2 mb-3">
+                    <h2 class="font-black text-sm text-gray-900">🛍️ మీ కార్ట్ (Cart)</h2>
+                    <button onclick="toggleCart()" class="text-gray-500 font-bold text-base">✕</button>
+                </div>
+                <div id="cart-items" class="space-y-2 overflow-y-auto max-h-[60vh] pr-1"></div>
+            </div>
+            <div class="border-t pt-3 space-y-2">
+                <div class="flex justify-between items-center text-sm font-black text-gray-900">
+                    <span>మొత్తం (Total):</span>
+                    <span id="cart-total" class="text-rose-600">₹0</span>
+                </div>
+                <button onclick="proceedToCheckout()" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-xs font-bold shadow transition">
+                    ఆర్డర్ చేయండి (Checkout)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal with QR Code -->
+    <div id="checkoutModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-3">
+        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-sm font-black text-gray-900">💳 ఆన్‌లైన్ పేమెంట్ & ఆర్డర్ వివరాలు</h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-500 font-bold text-base">✕</button>
+            </div>
+
+            <!-- QR Code Box -->
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center space-y-2">
+                <p class="text-xs font-bold text-gray-800">మొత్తం చెల్లించవలసిన రూ: <span id="qrTotalAmount" class="text-rose-600 text-sm font-black">0</span></p>
+                <div class="bg-white p-2 inline-block rounded-xl shadow-sm border">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=8121911438@okbizaxis%26pn=VenkatTextiles%26am=" class="w-32 h-32 mx-auto object-contain">
+                </div>
+                <p class="text-[10px] text-gray-600 font-semibold">స్కానింగ్ లేదా UPI ID: <b class="text-gray-900">8121911438@okbizaxis</b></p>
+            </div>
+
+            <!-- Customer Details Form -->
+            <div class="space-y-2">
+                <div>
+                    <label class="text-[10px] font-semibold text-gray-600 block">పూర్తి పేరు (Full Name):</label>
+                    <input type="text" id="custName" placeholder="మీ పేరు" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-gray-600 block">వాట్సాప్ నంబర్ (Phone Number):</label>
+                    <input type="tel" id="custPhone" placeholder="10 అంకెల నంబర్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-gray-600 block">పూర్తి అడ్రస్ (Delivery Address):</label>
+                    <textarea id="custAddress" rows="2" placeholder="ఇంటి నంబర్, వీధి, ఊరు" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50"></textarea>
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-gray-600 block">పిన్‌కోడ్ (Pincode):</label>
+                    <input type="text" id="custPincode" placeholder="522601" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-gray-600 block text-rose-600 font-bold">12 అంకెల UTR / Transaction ID (తప్పనిసరి):</label>
+                    <input type="text" id="utrNumber" placeholder="ఉదా: 4321xxxxxxxx" class="w-full border border-rose-300 px-2.5 py-1.5 text-xs rounded-lg outline-none bg-rose-50 font-bold">
+                </div>
+            </div>
+
+            <button onclick="finishOrderWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2.5 rounded-xl font-bold shadow transition">
+                🚀 WhatsApp ద్వారా ఆర్డర్ పంపండి (Instant Order)
+            </button>
+        </div>
+    </div>
+
+    <!-- Image Zoom Modal -->
+    <div id="imageZoomModal" class="fixed inset-0 bg-black bg-opacity-80 hidden z-50 flex items-center justify-center p-3" onclick="closeImageZoom()">
+        <div class="relative max-w-sm w-full bg-white rounded-2xl p-2 text-center" onclick="event.stopPropagation()">
+            <button onclick="closeImageZoom()" class="absolute top-2 right-2 bg-gray-800 text-white w-6 h-6 rounded-full text-xs font-bold">✕</button>
+            <img id="zoomedImg" class="w-full h-72 object-contain rounded-xl mb-2">
+            <h4 id="zoomedTitle" class="font-bold text-xs text-gray-900"></h4>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
