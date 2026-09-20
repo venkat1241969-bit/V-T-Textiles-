@@ -24,7 +24,7 @@
         window.addProduct = async function(event) {
             event.preventDefault();
             const name = document.getElementById('prodName').value;
-            const catalog = document.getElementById('prodCatalog').value.trim() || "General";
+            const catalog = document.getElementById('prodCatalog').value;
             const price = document.getElementById('prodPrice').value;
             const discount = document.getElementById('prodDiscount').value;
             const stock = document.getElementById('prodStock').value;
@@ -84,7 +84,8 @@
                     const p = docSnap.data();
                     const id = docSnap.id;
                     const stockVal = Number(p.stock) || 0;
-                    const catalogVal = p.catalog || 'General';
+                    const catalogVal = p.catalog || 'SILK SAREES';
+                    
                     content += `
                         <div class="bg-white p-2.5 rounded-xl border border-gray-200 flex flex-col gap-2 shadow-sm">
                             <div class="flex items-center justify-between gap-2">
@@ -96,18 +97,23 @@
                                 <button onclick="deleteProduct('${id}')" class="bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-lg text-[10px] font-bold">డిలీట్</button>
                             </div>
                             
-                            <!-- Catalog Edit Option -->
+                            <!-- Catalog Update Option -->
                             <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-lg border border-gray-200">
-                                <span class="text-[10px] font-bold text-gray-700">కేటలాగ్ పేరు:</span>
+                                <span class="text-[10px] font-bold text-gray-700">కేటగిరీ మార్చు:</span>
                                 <div class="flex items-center gap-1.5">
-                                    <input type="text" id="new_catalog_${id}" value="${catalogVal}" class="w-24 border px-1.5 py-0.5 text-xs rounded bg-white font-bold">
+                                    <select id="new_catalog_${id}" class="border px-1.5 py-0.5 text-[10px] rounded bg-white font-bold">
+                                        <option value="SILK SAREES" ${catalogVal === 'SILK SAREES' ? 'selected' : ''}>SILK SAREES</option>
+                                        <option value="PATTU SAREES" ${catalogVal === 'PATTU SAREES' ? 'selected' : ''}>PATTU SAREES</option>
+                                        <option value="WORK SAREES" ${catalogVal === 'WORK SAREES' ? 'selected' : ''}>WORK SAREES</option>
+                                        <option value="READYMADE" ${catalogVal === 'READYMADE' ? 'selected' : ''}>READYMADE</option>
+                                    </select>
                                     <button onclick="updateProductCatalog('${id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow">
                                         మార్చు
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Stock Edit Option -->
+                            <!-- Stock Update Option -->
                             <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-lg border border-gray-200">
                                 <span class="text-[10px] font-bold text-gray-700">స్టాక్ మార్చు:</span>
                                 <div class="flex items-center gap-1.5">
@@ -127,12 +133,12 @@
         };
 
         window.updateProductCatalog = async function(id) {
-            const newCatalogVal = document.getElementById(`new_catalog_${id}`).value.trim() || "General";
+            const newCatalogVal = document.getElementById(`new_catalog_${id}`).value;
             try {
                 await updateDoc(doc(db, "items", id), {
                     catalog: newCatalogVal
                 });
-                alert("కేటలాగ్ పేరు విజయవంతంగా మార్చబడింది!");
+                alert("కేటగిరీ విజయవంతంగా మార్చబడింది!");
                 loadAdminProducts();
             } catch(e) {
                 alert("మార్చడం కుదరలేదు: " + e.message);
@@ -278,8 +284,13 @@
                     <input type="text" id="prodName" required placeholder="ఉదా: పట్టు చీర" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
                 </div>
                 <div>
-                    <label class="text-[10px] font-semibold text-gray-600 block">కేటలాగ్ పేరు (Catalog Name):</label>
-                    <input type="text" id="prodCatalog" placeholder="ఉదా: Sarees / Kurtis" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                    <label class="text-[10px] font-semibold text-gray-600 block">కేటగిరీ ఎంచుకోండి (Category):</label>
+                    <select id="prodCatalog" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50 font-bold">
+                        <option value="SILK SAREES">SILK SAREES</option>
+                        <option value="PATTU SAREES">PATTU SAREES</option>
+                        <option value="WORK SAREES">WORK SAREES</option>
+                        <option value="READYMADE">READYMADE</option>
+                    </select>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <div>
@@ -309,7 +320,7 @@
             </form>
         </section>
 
-        <!-- Manage Existing Products with Catalog & Stock Update -->
+        <!-- Manage Existing Products -->
         <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
             <h2 class="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider border-b pb-1">📋 ప్రొడక్ట్స్ జాబితా & మేనేజ్‌మెంట్</h2>
             <div id="admin-products-list" class="space-y-3"></div>
