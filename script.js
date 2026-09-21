@@ -269,7 +269,7 @@ window.finishOrderWhatsApp = function() {
     orderSummary += `\n💰 మొత్తం బిల్లు (Total): *₹${total}*`;
     orderSummary += `\n✅ పేమెంట్ వెరిఫై చేయబడింది.`;
 
-    const myNumber = "919441447923";
+    const myNumber = "918121911438";
     window.open(`https://wa.me/${myNumber}?text=${encodeURIComponent(orderSummary)}`, '_blank');
 }
 
