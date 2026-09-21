@@ -35,9 +35,9 @@ async function loadStoreProducts() {
             "SILK SAREES": [],
             "PATTU SAREES": [],
             "WORK SAREES": [],
-            "READYMADE": []
+            "COTTON SAREES": []
             "FANCY SAREES": [],
-            "COTTON SAREES": [],
+            "READYMADE": []
         };
 
         querySnapshot.forEach((docSnap) => {
