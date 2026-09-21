@@ -35,7 +35,7 @@ async function loadStoreProducts() {
             "SILK SAREES": [],
             "PATTU SAREES": [],
             "WORK SAREES": [],
-            "COTTON SAREES": []
+            "COTTON SAREES": [],
             "FANCY SAREES": [],
             "READYMADE": []
         };
@@ -276,4 +276,4 @@ window.finishOrderWhatsApp = function() {
 window.onload = function() {
     loadStoreProducts();
 };
-    
+            
