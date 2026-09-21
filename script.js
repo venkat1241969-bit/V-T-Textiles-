@@ -276,4 +276,48 @@ window.finishOrderWhatsApp = function() {
 window.onload = function() {
     loadStoreProducts();
 };
-            
+ window.openCustomerOrdersModal = async function() {
+    document.getElementById('customerOrdersModal').classList.remove('hidden');
+    const container = document.getElementById('customer-orders-list');
+    container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
+
+    try {
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        if(querySnapshot.empty) {
+            container.innerHTML = `<p class="text-gray-400 text-center text-xs py-6">మీరు చేసిన ఆర్డర్లు ఏవీ లేవు.</p>`;
+            return;
+        }
+
+        let html = '';
+        querySnapshot.forEach((docSnap) => {
+            const ord = docSnap.data();
+            html += `
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-1.5 shadow-sm">
+                    <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
+                        <span>🆔 ${ord.orderId}</span>
+                        <span class="text-rose-600">₹${ord.total}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
+                    <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
+                    <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
+                    
+                    <div class="bg-blue-50 border border-blue-100 p-2 rounded-lg mt-1 space-y-1">
+                        <p class="text-[10px] font-bold text-blue-900">🚚 షిప్పింగ్ & ట్రాకింగ్:</p>
+                        <p class="text-[10px] text-gray-800"><b>Waybill / Tracking No:</b> ${ord.waybill || 'త్వరలో అప్‌డేట్ చేయబడుతుంది'}</p>
+                        <p class="text-[10px] text-gray-800"><b>Shipping Date:</b> ${ord.shippingDate || 'ప్రాసెసింగ్‌లో ఉంది'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
+    }
+};
+
+window.closeCustomerOrdersModal = function() {
+    document.getElementById('customerOrdersModal').classList.add('hidden');
+};
+
