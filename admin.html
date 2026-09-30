@@ -171,58 +171,74 @@
         };
 
         window.loadAdminOrdersModal = async function() {
-            document.getElementById('adminOrdersModal').classList.remove('hidden');
-            const container = document.getElementById('admin-orders-list');
-            container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
+    document.getElementById('adminOrdersModal').classList.remove('hidden');
+    const container = document.getElementById('admin-orders-list');
+    container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
 
-            try {
-                const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
-                const querySnapshot = await getDocs(q);
+    try {
+        const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
 
-                if(querySnapshot.empty) {
-                    container.innerHTML = `<p class="text-gray-400 text-center text-xs py-6">ఆర్డర్లు ఏవీ లేవు.</p>`;
-                    return;
-                }
+        if(querySnapshot.empty) {
+            container.innerHTML = `<p class="text-gray-400 text-center text-xs py-6">ఆర్డర్లు ఏవీ లేవు.</p>`;
+            return;
+        }
 
-                let html = '';
-                querySnapshot.forEach((docSnap) => {
-                    const ord = docSnap.data();
-                    const docId = docSnap.id;
-                    html += `
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2 shadow-sm relative">
-                            <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
-                                <span>🆔 ${ord.orderId}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-rose-600">₹${ord.total}</span>
-                                    <button onclick="deleteOrder('${docId}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-0.5 rounded text-[9px] font-bold">🗑️ డిలీట్</button>
-                                </div>
-                            </div>
-                            <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
-                            <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
-                            <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
-                            
-                            <div class="bg-white p-2 rounded-lg border border-gray-200 space-y-1.5">
-                                <p class="text-[10px] font-bold text-gray-800">🚚 వేబిల్లు & డేట్ అప్‌డేట్:</p>
-                                <div>
-                                    <label class="text-[9px] text-gray-500 block">Waybill / Tracking No:</label>
-                                    <input type="text" id="waybill_${docId}" value="${ord.waybill || ''}" placeholder="వేబిల్లు నంబర్" class="w-full border px-2 py-1 text-xs rounded bg-white">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] text-gray-500 block">Shipping Date:</label>
-                                    <input type="text" id="date_${docId}" value="${ord.shippingDate || ''}" placeholder="ఉదా: 18 Sep 2026" class="w-full border px-2 py-1 text-xs rounded bg-white">
-                                </div>
-                                <button onclick="saveOrderTracking('${docId}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded text-xs font-bold shadow transition mt-1">
-                                    💾 సేవ్ & అప్‌డేట్ (Save)
-                                </button>
-                            </div>
-                        </div>
-                    `;
+        let html = '';
+        querySnapshot.forEach((docSnap) => {
+            const ord = docSnap.data();
+            const docId = docSnap.id;
+
+            // Format Timestamp to Readable Date & Time
+            let formattedDate = "తీయబడలేదు";
+            if (ord.timestamp) {
+                const dateObj = new Date(ord.timestamp);
+                formattedDate = dateObj.toLocaleString('en-IN', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
                 });
-                container.innerHTML = html;
-            } catch(e) {
-                container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
             }
-        };
+
+            html += `
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2 shadow-sm relative">
+                    <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
+                        <span>🆔 ${ord.orderId}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-rose-600">₹${ord.total}</span>
+                            <button onclick="deleteOrder('${docId}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-0.5 rounded text-[9px] font-bold">🗑️ డిలీట్</button>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-rose-700 font-bold">📅 తేదీ & సమయం: ${formattedDate}</p>
+                    <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
+                    <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
+                    <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
+                    
+                    <div class="bg-white p-2 rounded-lg border border-gray-200 space-y-1.5">
+                        <p class="text-[10px] font-bold text-gray-800">🚚 వేబిల్లు & డేట్ అప్‌డేట్:</p>
+                        <div>
+                            <label class="text-[9px] text-gray-500 block">Waybill / Tracking No:</label>
+                            <input type="text" id="waybill_${docId}" value="${ord.waybill || ''}" placeholder="వేబిల్లు నంబర్" class="w-full border px-2 py-1 text-xs rounded bg-white">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-gray-500 block">Shipping Date:</label>
+                            <input type="text" id="date_${docId}" value="${ord.shippingDate || ''}" placeholder="ఉదా: 18 Sep 2026" class="w-full border px-2 py-1 text-xs rounded bg-white">
+                        </div>
+                        <button onclick="saveOrderTracking('${docId}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded text-xs font-bold shadow transition mt-1">
+                            💾 సేవ్ & అప్‌డేట్ (Save)
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
+    }
+};
 
         window.deleteOrder = async function(docId) {
             if(confirm("ఈ ఆర్డర్‌ని పూర్తిగా డిలీట్ చేయాలనుకుంటున్నారా?")) {
