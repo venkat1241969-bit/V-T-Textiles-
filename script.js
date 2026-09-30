@@ -293,12 +293,28 @@ window.onload = function() {
         let html = '';
         querySnapshot.forEach((docSnap) => {
             const ord = docSnap.data();
+            
+            // Format Timestamp to Readable Date & Time
+            let formattedDate = "తీయబడలేదు";
+            if (ord.timestamp) {
+                const dateObj = new Date(ord.timestamp);
+                formattedDate = dateObj.toLocaleString('en-IN', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            }
+
             html += `
                 <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-1.5 shadow-sm">
                     <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
                         <span>🆔 ${ord.orderId}</span>
                         <span class="text-rose-600">₹${ord.total}</span>
                     </div>
+                    <p class="text-[10px] text-rose-700 font-bold">📅 తేదీ & సమయం: ${formattedDate}</p>
                     <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
                     <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
                     <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
