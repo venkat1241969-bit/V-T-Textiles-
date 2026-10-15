@@ -74,6 +74,14 @@ async function loadStoreProducts() {
                                 <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer hover:opacity-95 transition">
                                 <span class="absolute top-2 left-2 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">${p.discount || 30}% off</span>
                             </div>
+                      <div class="relative mb-2">
+                        <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer hover:opacity-95 transition">
+                        <span class="absolute top-2 left-2 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">${p.discount || 30}% off</span>
+                    </div>
+                    
+                    <!-- ఇక్కడ ఆ వీడియో కోడ్ యాడ్ చేయాలి -->
+                    ${p.video ? `<video src="${p.video}" controls class="w-full h-32 object-cover rounded-lg shadow-sm mt-2"></video>` : ''}
+                    
                             <h3 class="font-bold text-xs text-gray-900 truncate">${p.name}</h3>
                             <p class="text-[9px] text-gray-500 truncate mb-1">${p.description || ''}</p>
                             <div class="flex items-center gap-1.5 mb-2">
