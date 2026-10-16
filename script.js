@@ -1,4 +1,3 @@
-// Firebase SDK Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -14,11 +13,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Cart array
 let cart = [];
 let fetchedProducts = [];
 
-// Load Products on Store Page
 window.loadStoreProducts = async function() {
     const container = document.getElementById('categories-container');
     if (!container) return;
@@ -39,7 +36,6 @@ window.loadStoreProducts = async function() {
             return;
         }
 
-        // Group products by catalog/category
         const catalogs = {};
         fetchedProducts.forEach(p => {
             const cat = p.catalog || 'SILK SAREES';
@@ -48,7 +44,6 @@ window.loadStoreProducts = async function() {
         });
 
         let mainHtml = '';
-
         for (const [catName, products] of Object.entries(catalogs)) {
             mainHtml += `
                 <div class="mb-6">
@@ -62,10 +57,9 @@ window.loadStoreProducts = async function() {
                 const stockVal = Number(p.stock) || 0;
                 const isOut = stockVal <= 0;
 
-                // డబుల్ ఇమేజ్ రాకుండా కేవలం ఒక్క ఇమేజ్ మరియు ఉంటే వీడియో వచ్చేలా సెట్ చేసిన కోడ్
                 let mediaHtml = `
                     <div class="relative mb-2">
-                        <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer hover:opacity-95 transition">
+                        <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer">
                         <span class="absolute top-2 left-2 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">${p.discount || 30}% off</span>
                     </div>
                 `;
@@ -98,32 +92,13 @@ window.loadStoreProducts = async function() {
                     </div>
                 `;
             });
-
             mainHtml += `</div></div>`;
         }
-
         container.innerHTML = mainHtml;
     } catch (e) {
-        console.error("Error loading products: ", e);
-        container.innerHTML = `<p class="text-red-500 text-center text-xs">ప్రొడక్ట్స్ లోడ్ చేయడంలో లోపం ఏర్పడింది.</p>`;
+        console.error(e);
+        container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం ఏర్పడింది.</p>`;
     }
-};
-
-// Image Zoom Modal Functions
-window.openImageZoom = function(imgSrc, title) {
-    const modal = document.getElementById('imageZoomModal');
-    const img = document.getElementById('zoomedImg');
-    const zoomedTitle = document.getElementById('zoomedTitle');
-    if (!modal || !img) return;
-
-    img.src = imgSrc;
-    if (zoomedTitle) zoomedTitle.innerText = title;
-    modal.classList.remove('hidden');
-};
-
-window.closeImageZoom = function() {
-    const modal = document.getElementById('imageZoomModal');
-    if (modal) modal.classList.add('hidden');
 };
 
 // Add to Cart Logic
@@ -138,10 +113,33 @@ window.addToCart = function(id) {
         cart.push({ ...product, qty: 1 });
     }
     alert("ప్రొడక్ట్ కార్ట్‌లోకి జోడించబడింది!");
-    // updateCartCount(); // ఒకవేళ కార్ట్ కౌంట్ ఫంక్షన్ ఉంటే ఇక్కడ రన్ అవుతుంది
+    updateCartBadge();
 };
 
-// Page Load Event
+function updateCartBadge() {
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+        const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+        badge.innerText = totalQty;
+    }
+}
+
+// Image Zoom Functions
+window.openImageZoom = function(imgSrc, title) {
+    const modal = document.getElementById('imageZoomModal');
+    const img = document.getElementById('zoomedImg');
+    const zoomedTitle = document.getElementById('zoomedTitle');
+    if (!modal || !img) return;
+    img.src = imgSrc;
+    if (zoomedTitle) zoomedTitle.innerText = title;
+    modal.classList.remove('hidden');
+};
+
+window.closeImageZoom = function() {
+    const modal = document.getElementById('imageZoomModal');
+    if (modal) modal.classList.add('hidden');
+};
+
 window.onload = function() {
     loadStoreProducts();
 };
