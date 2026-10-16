@@ -37,7 +37,7 @@
             const videoFile = document.getElementById('prodVideoFile').files[0];
 
             if (!imageFile) {
-                alert("దయచేసి గ్యాలరీ నుండి ఒక ఫోటోను ఎంచుకోండి!");
+                alert("దయచేసి ఫోటోను ఎంచుకోండి!");
                 return;
             }
 
@@ -46,12 +46,10 @@
             btn.disabled = true;
 
             try {
-                // 1. Image Upload to Firebase Storage
                 const imgRef = ref(storage, `products/images/${Date.now()}_${imageFile.name}`);
                 await uploadBytes(imgRef, imageFile);
                 const imageUrl = await getDownloadURL(imgRef);
 
-                // 2. Video Upload to Firebase Storage (Optional)
                 let videoUrl = "";
                 if (videoFile) {
                     const vidRef = ref(storage, `products/videos/${Date.now()}_${videoFile.name}`);
@@ -59,7 +57,6 @@
                     videoUrl = await getDownloadURL(vidRef);
                 }
 
-                // 3. Save to Firestore
                 await addDoc(collection(db, "items"), {
                     name,
                     catalog,
@@ -77,7 +74,7 @@
                 document.getElementById('productForm').reset();
                 loadAdminProducts();
             } catch (e) {
-                console.error("Error adding product: ", e);
+                console.error(e);
                 alert("లోపం ఏర్పడింది: " + e.message);
             } finally {
                 btn.innerText = "ప్రొడక్ట్ సేవ్ చేయి";
@@ -93,21 +90,19 @@
                 let content = '';
 
                 if (querySnapshot.empty) {
-                    list.innerHTML = `<p class="text-gray-500 text-center py-6 text-xs">ప్రొడక్ట్స్ ఏవీ లేవు.</p>`;
+                    list.innerHTML = `<p class="text-gray-500 text-center py-4 text-xs">ప్రొడక్ట్స్ ఏవీ లేవు.</p>`;
                     return;
                 }
 
                 querySnapshot.forEach((docSnap) => {
                     const p = docSnap.data();
                     const id = docSnap.id;
-                    const stockVal = Number(p.stock) || 0;
-                    
                     content += `
                         <div class="bg-white p-2.5 rounded-xl border border-gray-200 flex items-center justify-between gap-2 shadow-sm">
                             <img src="${p.image}" class="w-12 h-12 object-cover rounded-lg">
                             <div class="flex-grow">
                                 <h4 class="font-bold text-xs text-gray-900 truncate max-w-[130px]">${p.name}</h4>
-                                <p class="text-[10px] text-rose-600 font-black">₹${p.price} | Stock: ${stockVal}</p>
+                                <p class="text-[10px] text-rose-600 font-black">₹${p.price} | Stock: ${p.stock}</p>
                             </div>
                             <button onclick="deleteProduct('${id}')" class="bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-lg text-[10px] font-bold">డిలీట్</button>
                         </div>
@@ -126,13 +121,65 @@
             }
         };
 
+        // కస్టమర్ ఆర్డర్లు లోడ్ చేసే ఫంక్షన్
+        window.loadAdminOrdersModal = async function() {
+            document.getElementById('adminOrdersModal').classList.remove('hidden');
+            const container = document.getElementById('admin-orders-list');
+            container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
+
+            try {
+                const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                if(querySnapshot.empty) {
+                    container.innerHTML = `<p class="text-gray-400 text-center text-xs py-6">ఆర్డర్లు ఏవీ లేవు.</p>`;
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((docSnap) => {
+                    const ord = docSnap.data();
+                    const docId = docSnap.id;
+                    html += `
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2 shadow-sm">
+                            <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
+                                <span>🆔 ${ord.orderId || 'N/A'}</span>
+                                <span class="text-rose-600">₹${ord.total}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
+                            <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
+                            <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
+                            <button onclick="deleteOrder('${docId}')" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold">🗑️ ఆర్డర్ డిలీట్</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
+            }
+        };
+
+        window.deleteOrder = async function(docId) {
+            if(confirm("ఈ ఆర్డర్‌ని డిలీట్ చేయాలా?")) {
+                await deleteDoc(doc(db, "orders", docId));
+                loadAdminOrdersModal();
+            }
+        };
+
+        window.closeAdminOrdersModal = function() {
+            document.getElementById('adminOrdersModal').classList.add('hidden');
+        };
+
         window.onload = function() { loadAdminProducts(); };
     </script>
 </head>
 <body class="bg-gray-100 pb-16">
     <header class="bg-gray-900 text-white p-3 sticky top-0 z-40 shadow flex justify-between items-center">
         <h1 class="text-sm font-black tracking-wide">V T TEXTILES ADMIN</h1>
-        <a href="index.html" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">స్టోర్</a>
+        <div class="flex gap-2">
+            <button onclick="loadAdminOrdersModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">📦 కస్టమర్ ఆర్డర్లు</button>
+            <a href="index.html" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">స్టోర్</a>
+        </div>
     </header>
 
     <main class="container mx-auto p-3 max-w-xl space-y-4">
@@ -141,11 +188,11 @@
             <form id="productForm" onsubmit="addProduct(event)" class="space-y-2.5">
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">ప్రొడక్ట్ పేరు:</label>
-                    <input type="text" id="prodName" required placeholder="ఉదా: పట్టు చీర" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                    <input type="text" id="prodName" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
                 <div>
-                    <label class="text-[10px] font-semibold text-gray-600 block">కేటగిరీ ఎంచుకోండి:</label>
-                    <select id="prodCatalog" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50 font-bold">
+                    <label class="text-[10px] font-semibold text-gray-600 block">కేటగిరీ:</label>
+                    <select id="prodCatalog" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 font-bold">
                         <option value="SILK SAREES">SILK SAREES</option>
                         <option value="PATTU SAREES">PATTU SAREES</option>
                         <option value="WORK SAREES">WORK SAREES</option>
@@ -157,15 +204,15 @@
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">ధర (₹):</label>
-                        <input type="number" id="prodPrice" required placeholder="450" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodPrice" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">డిస్కౌంట్ (%):</label>
-                        <input type="number" id="prodDiscount" value="30" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodDiscount" value="30" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">స్టాక్:</label>
-                        <input type="number" id="prodStock" required placeholder="10" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodStock" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                 </div>
                 <div>
@@ -178,7 +225,7 @@
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">వివరణ:</label>
-                    <input type="text" id="prodDesc" placeholder="డీప్ కల్ర్స్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                    <input type="text" id="prodDesc" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
                 <button type="submit" id="saveBtn" class="w-full bg-rose-600 text-white py-2 rounded-lg text-xs font-bold shadow">ప్రొడక్ట్ సేవ్ చేయి</button>
             </form>
@@ -188,6 +235,16 @@
             <div id="admin-products-list" class="space-y-3"></div>
         </section>
     </main>
+
+    <!-- Orders Modal -->
+    <div id="adminOrdersModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-3">
+        <div class="bg-white w-full max-w-md p-4 rounded-2xl relative max-h-[85vh] flex flex-col shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                <h3 class="text-sm font-black text-gray-900">📦 కస్టమర్ ఆర్డర్లు</h3>
+                <button onclick="closeAdminOrdersModal()" class="text-gray-500 font-bold text-base hover:text-red-600">✕</button>
+            </div>
+            <div id="admin-orders-list" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+        </div>
+    </div>
 </body>
 </html>
-
