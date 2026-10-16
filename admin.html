@@ -43,12 +43,10 @@
             btn.innerText = "ఫైల్స్ అప్‌లోడ్ అవుతున్నాయి...";
             btn.disabled = true;
 
-            // ఇమేజ్ రీడ్ చేయడం
             const readerImg = new FileReader();
             readerImg.onload = function(e) {
                 const imageData = e.target.result;
                 
-                // ఒకవేళ వీడియో ఫైల్ కూడా సెలెక్ట్ చేసి ఉంటే దాన్ని రీడ్ చేయడం
                 if (videoFile) {
                     const readerVid = new FileReader();
                     readerVid.onload = async function(ev) {
@@ -57,14 +55,12 @@
                     };
                     readerVid.readAsDataURL(videoFile);
                 } else {
-                    // కేవలం ఇమేజ్ మాత్రమే ఉంటే వీడియో ఖాళీగా పంపడం
                     saveToFirebase(name, catalog, price, discount, stock, desc, imageData, "", btn);
                 }
             };
             readerImg.readAsDataURL(imageFile);
         };
 
-        // ఫైర్‌బేస్‌లో డేటా సేవ్ చేసే సబ్-ఫంక్షన్
         async function saveToFirebase(name, catalog, price, discount, stock, desc, imageData, videoData, btn) {
             try {
                 await addDoc(collection(db, "items"), {
@@ -120,7 +116,6 @@
                                 <button onclick="deleteProduct('${id}')" class="bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded-lg text-[10px] font-bold">డిలీట్</button>
                             </div>
                             
-                            <!-- Catalog Update Option -->
                             <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-lg border border-gray-200">
                                 <span class="text-[10px] font-bold text-gray-700">కేటగిరీ మార్చు:</span>
                                 <div class="flex items-center gap-1.5">
@@ -132,20 +127,15 @@
                                         <option value="FANCY SAREES" ${catalogVal === 'FANCY SAREES' ? 'selected' : ''}>FANCY SAREES</option>
                                         <option value="READYMADE" ${catalogVal === 'READYMADE' ? 'selected' : ''}>READYMADE</option>
                                     </select>
-                                    <button onclick="updateProductCatalog('${id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow">
-                                        మార్చు
-                                    </button>
+                                    <button onclick="updateProductCatalog('${id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow">మార్చు</button>
                                 </div>
                             </div>
 
-                            <!-- Stock Update Option -->
                             <div class="flex items-center justify-between bg-gray-50 p-1.5 rounded-lg border border-gray-200">
                                 <span class="text-[10px] font-bold text-gray-700">స్టాక్ మార్చు:</span>
                                 <div class="flex items-center gap-1.5">
                                     <input type="number" id="new_stock_${id}" value="${stockVal}" class="w-16 border px-1.5 py-0.5 text-xs rounded bg-white text-center font-bold">
-                                    <button onclick="updateProductStock('${id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[10px] font-bold shadow">
-                                        అప్‌డేట్
-                                    </button>
+                                    <button onclick="updateProductStock('${id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[10px] font-bold shadow">అప్‌డేట్</button>
                                 </div>
                             </div>
                         </div>
@@ -160,30 +150,20 @@
         window.updateProductCatalog = async function(id) {
             const newCatalogVal = document.getElementById(`new_catalog_${id}`).value;
             try {
-                await updateDoc(doc(db, "items", id), {
-                    catalog: newCatalogVal
-                });
+                await updateDoc(doc(db, "items", id), { catalog: newCatalogVal });
                 alert("కేటగిరీ విజయవంతంగా మార్చబడింది!");
                 loadAdminProducts();
-            } catch(e) {
-                alert("మార్చడం కుదరలేదు: " + e.message);
-            }
+            } catch(e) { alert("మార్చడం కుదరలేదు: " + e.message); }
         };
 
         window.updateProductStock = async function(id) {
             const newStockVal = Number(document.getElementById(`new_stock_${id}`).value);
             const newStatus = newStockVal > 0 ? "In Stock" : "Out of Stock";
-
             try {
-                await updateDoc(doc(db, "items", id), {
-                    stock: newStockVal,
-                    status: newStatus
-                });
+                await updateDoc(doc(db, "items", id), { stock: newStockVal, status: newStatus });
                 alert("స్టాక్ విజయవంతంగా అప్‌డేట్ చేయబడింది!");
                 loadAdminProducts();
-            } catch(e) {
-                alert("అప్‌డేట్ అవ్వలేదు: " + e.message);
-            }
+            } catch(e) { alert("అప్‌డేట్ అవ్వలేదు: " + e.message); }
         };
 
         window.deleteProduct = async function(id) {
@@ -197,125 +177,77 @@
             document.getElementById('adminOrdersModal').classList.remove('hidden');
             const container = document.getElementById('admin-orders-list');
             container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
-
             try {
                 const q = query(collection(db, "orders"), orderBy("timestamp", "desc"));
                 const querySnapshot = await getDocs(q);
-
                 if(querySnapshot.empty) {
                     container.innerHTML = `<p class="text-gray-400 text-center text-xs py-6">ఆర్డర్లు ఏవీ లేవు.</p>`;
                     return;
                 }
-
                 let html = '';
                 querySnapshot.forEach((docSnap) => {
                     const ord = docSnap.data();
                     const docId = docSnap.id;
-
                     let formattedDate = "తీయబడలేదు";
                     if (ord.timestamp) {
-                        const dateObj = new Date(ord.timestamp);
-                        formattedDate = dateObj.toLocaleString('en-IN', { 
-                            day: '2-digit', 
-                            month: 'short', 
-                            year: 'numeric', 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: true 
-                        });
+                        formattedDate = new Date(ord.timestamp).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
                     }
-
                     html += `
                         <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2 shadow-sm relative">
                             <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
                                 <span>🆔 ${ord.orderId}</span>
                                 <div class="flex items-center gap-2">
                                     <span class="text-rose-600">₹${ord.total}</span>
-                                    <button onclick="deleteOrder('${docId}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-0.5 rounded text-[9px] font-bold">🗑️ డిలీట్</button>
+                                    <button onclick="deleteOrder('${docId}')" class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-bold">🗑️ డిలీట్</button>
                                 </div>
                             </div>
-                            <p class="text-[10px] text-rose-700 font-bold">📅 తేదీ & సమయం: ${formattedDate}</p>
+                            <p class="text-[10px] text-rose-700 font-bold">📅 తేదీ: ${formattedDate}</p>
                             <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
                             <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
                             <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
-                            
                             <div class="bg-white p-2 rounded-lg border border-gray-200 space-y-1.5">
-                                <p class="text-[10px] font-bold text-gray-800">🚚 వేబిల్లు & డేట్ అప్‌డేట్:</p>
-                                <div>
-                                    <label class="text-[9px] text-gray-500 block">Waybill / Tracking No:</label>
-                                    <input type="text" id="waybill_${docId}" value="${ord.waybill || ''}" placeholder="వేబిల్లు నంబర్" class="w-full border px-2 py-1 text-xs rounded bg-white">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] text-gray-500 block">Shipping Date:</label>
-                                    <input type="text" id="date_${docId}" value="${ord.shippingDate || ''}" placeholder="ఉదా: 18 Sep 2026" class="w-full border px-2 py-1 text-xs rounded bg-white">
-                                </div>
-                                <button onclick="saveOrderTracking('${docId}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded text-xs font-bold shadow transition mt-1">
-                                    💾 సేవ్ & అప్‌డేట్ (Save)
-                                </button>
+                                <p class="text-[10px] font-bold text-gray-800">🚚 వేబిల్లు & డేట్:</p>
+                                <input type="text" id="waybill_${docId}" value="${ord.waybill || ''}" placeholder="వేబిల్లు నంబర్" class="w-full border px-2 py-1 text-xs rounded bg-white">
+                                <input type="text" id="date_${docId}" value="${ord.shippingDate || ''}" placeholder="ఉదా: 18 Sep 2026" class="w-full border px-2 py-1 text-xs rounded bg-white">
+                                <button onclick="saveOrderTracking('${docId}')" class="w-full bg-emerald-600 text-white py-1.5 rounded text-xs font-bold shadow mt-1">💾 సేవ్ & అప్‌డేట్</button>
                             </div>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
-            } catch(e) {
-                container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
-            }
+            } catch(e) { container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`; }
         };
 
         window.deleteOrder = async function(docId) {
-            if(confirm("ఈ ఆర్డర్‌ని పూర్తిగా డిలీట్ చేయాలనుకుంటున్నారా?")) {
-                try {
-                    await deleteDoc(doc(db, "orders", docId));
-                    alert("ఆర్డర్ విజయవంతంగా డిలీట్ చేయబడింది!");
-                    loadAdminOrdersModal();
-                } catch(e) {
-                    alert("డిలీట్ అవ్వలేదు: " + e.message);
-                }
+            if(confirm("ఈ ఆర్డర్‌ని డిలీట్ చేయాలా?")) {
+                await deleteDoc(doc(db, "orders", docId));
+                loadAdminOrdersModal();
             }
         };
 
-        window.closeAdminOrdersModal = function() {
-            document.getElementById('adminOrdersModal').classList.add('hidden');
-        };
+        window.closeAdminOrdersModal = function() { document.getElementById('adminOrdersModal').classList.add('hidden'); };
 
         window.saveOrderTracking = async function(docId) {
             const waybill = document.getElementById(`waybill_${docId}`).value.trim();
             const shippingDate = document.getElementById(`date_${docId}`).value.trim();
-
-            try {
-                await updateDoc(doc(db, "orders", docId), {
-                    waybill: waybill,
-                    shippingDate: shippingDate
-                });
-                alert("విజయవంతంగా సేవ్ చేయబడింది!");
-                loadAdminOrdersModal();
-            } catch(e) {
-                alert("సేవ్ అవ్వలేదు: " + e.message);
-            }
+            await updateDoc(doc(db, "orders", docId), { waybill, shippingDate });
+            alert("విజయవంతంగా సేవ్ చేయబడింది!");
+            loadAdminOrdersModal();
         };
 
-        window.onload = function() {
-            loadAdminProducts();
-        };
+        window.onload = function() { loadAdminProducts(); };
     </script>
 </head>
 <body class="bg-gray-100 pb-16">
-
-    <!-- Header -->
     <header class="bg-gray-900 text-white p-3 sticky top-0 z-40 shadow flex justify-between items-center">
         <h1 class="text-sm font-black tracking-wide">V T TEXTILES ADMIN</h1>
         <div class="flex gap-2">
-            <button onclick="loadAdminOrdersModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">
-                📦 కస్టమర్ ఆర్డర్లు
-            </button>
+            <button onclick="loadAdminOrdersModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">📦 కస్టమర్ ఆర్డర్లు</button>
             <a href="index.html" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold">స్టోర్</a>
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="container mx-auto p-3 max-w-xl space-y-4">
-        
-        <!-- Add Product Section -->
         <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
             <h2 class="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider border-b pb-1">➕ కొత్త ప్రొడక్ట్ జోడించండి</h2>
             <form id="productForm" onsubmit="addProduct(event)" class="space-y-2.5">
@@ -352,12 +284,34 @@
                     <label class="text-[10px] font-semibold text-gray-600 block">గ్యాలరీ నుండి ఫోటో ఎంచుకోండి (Choose Image):</label>
                     <input type="file" id="prodImageFile" accept="image/*" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
                 </div>
-                
-                <!-- వీడియో ఫైల్ అప్‌లోడ్ ఆప్షన్ -->
                 <div>
                     <label class="text-[10px] font-bold text-gray-700 block mb-1">ప్రొడక్ట్ వీడియో (Video - Optional):</label>
                     <input type="file" id="prodVideoFile" accept="video/mp4,video/webm,video/quicktime" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100">
                 </div>
-
                 <div>
-     
+                    <label class="text-[10px] font-semibold text-gray-600 block">వివరణ (Description):</label>
+                    <input type="text" id="prodDesc" placeholder="డీప్ కల్ర్స్ డిజైనింగ్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                </div>
+                <button type="submit" id="saveBtn" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg text-xs font-bold shadow transition">ప్రొడక్ట్ సేవ్ చేయి</button>
+            </form>
+        </section>
+
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+            <h2 class="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider border-b pb-1">📦 ప్రొడక్ట్స్ జాబితా & మేనేజ్‌మెంట్</h2>
+            <div id="admin-products-list" class="space-y-3"></div>
+        </section>
+    </main>
+
+    <div id="adminOrdersModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-3">
+        <div class="bg-white w-full max-w-md p-4 rounded-2xl relative max-h-[85vh] flex flex-col shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                <h3 class="text-sm font-black text-gray-900">📦 కస్టమర్ ఆర్డర్లు & వేబిల్లు అప్‌డేట్</h3>
+                <button onclick="closeAdminOrdersModal()" class="text-gray-500 font-bold text-base hover:text-red-600">✕</button>
+            </div>
+            <div id="admin-orders-list" class="flex-grow overflow-y-auto space-y-3 pr-1">
+                <p class="text-gray-400 text-center text-xs py-6">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
