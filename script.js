@@ -60,7 +60,7 @@ window.loadStoreProducts = async function() {
 
                 let mediaHtml = `
                     <div class="relative mb-2">
-                        <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-cover rounded-lg cursor-pointer">
+                        <img src="${p.image}" onclick="openImageZoom('${p.image}', '${p.name}')" class="w-full h-36 object-contain rounded-lg cursor-pointer">
                         <span class="absolute top-2 left-2 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">${p.discount || 30}% off</span>
                     </div>
                 `;
