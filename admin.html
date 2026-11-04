@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPOp8NtMBP09rNtCGe5-wRre6Y_Zt5g0M",
@@ -20,6 +21,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         window.addProduct = async function(event) {
             event.preventDefault();
@@ -40,37 +42,29 @@
             }
 
             const btn = document.getElementById('saveBtn');
-            btn.innerText = "ఫైల్స్ ప్రాసెస్ అవుతున్నాయి...";
+            btn.innerText = "ఫైల్స్ అప్‌లోడ్ అవుతున్నాయి...";
             btn.disabled = true;
 
-            const readerImg = new FileReader();
-            readerImg.onload = function(e) {
-                const imageData = e.target.result;
-                
-                if (videoFile) {
-                    const readerVid = new FileReader();
-                    readerVid.onload = async function(ev) {
-                        const videoData = ev.target.result;
-                        await saveToFirestore(name, catalog, price, discount, stock, desc, imageData, videoData, btn);
-                    };
-                    readerVid.readAsDataURL(videoFile);
-                } else {
-                    saveToFirestore(name, catalog, price, discount, stock, desc, imageData, "", btn);
-                }
-            };
-            readerImg.readAsDataURL(imageFile);
-        };
-
-        async function saveToFirestore(name, catalog, price, discount, stock, desc, imageData, videoData, btn) {
             try {
+                const imgRef = ref(storage, `products/images/${Date.now()}_${imageFile.name}`);
+                await uploadBytes(imgRef, imageFile);
+                const imageUrl = await getDownloadURL(imgRef);
+
+                let videoUrl = "";
+                if (videoFile) {
+                    const vidRef = ref(storage, `products/videos/${Date.now()}_${videoFile.name}`);
+                    await uploadBytes(vidRef, videoFile);
+                    videoUrl = await getDownloadURL(vidRef);
+                }
+
                 await addDoc(collection(db, "items"), {
                     name,
                     catalog,
                     price: Number(price),
                     discount: Number(discount) || 30,
                     stock: Number(stock) || 1,
-                    image: imageData,
-                    video: videoData,
+                    image: imageUrl,
+                    video: videoUrl,
                     description: desc,
                     status: Number(stock) > 0 ? "In Stock" : "Out of Stock",
                     timestamp: new Date().toISOString()
@@ -80,12 +74,13 @@
                 document.getElementById('productForm').reset();
                 loadAdminProducts();
             } catch (e) {
-                alert("లోపం ఏర్పడింది (వీడియో సైజ్ చాలా పెద్దదిగా ఉండవచ్చు): " + e.message);
+                console.error(e);
+                alert("లోపం ఏర్పడింది: " + e.message);
             } finally {
                 btn.innerText = "ప్రొడక్ట్ సేవ్ చేయి";
                 btn.disabled = false;
             }
-        }
+        };
 
         window.loadAdminProducts = async function() {
             const list = document.getElementById('admin-products-list');
@@ -126,8 +121,8 @@
             }
         };
 
+        // కస్టమర్ ఆర్డర్లు లోడ్ చేసే ఫంక్షన్
         window.loadAdminOrdersModal = async function() {
-            document.getElementById('adminOrdersModal').classList.add('hidden'); // Fix modal toggle
             document.getElementById('adminOrdersModal').classList.remove('hidden');
             const container = document.getElementById('admin-orders-list');
             container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">ఆర్డర్లు లోడ్ అవుతున్నాయి...</p>`;
@@ -182,8 +177,8 @@
     <header class="bg-gray-900 text-white p-3 sticky top-0 z-40 shadow flex justify-between items-center">
         <h1 class="text-sm font-black tracking-wide">V T TEXTILES ADMIN</h1>
         <div class="flex gap-2">
-            <button onclick="loadAdminOrdersModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">📦 కస్టమర్ ఆర్డర్లు</button>
-            <a href="./index.html" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center">స్టోర్</a>
+            <button onclick="loadAdminOrdersModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">📦 కస్టమర్ ఆర్డర్లు</button>
+            <a href="index.html" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">స్టోర్</a>
         </div>
     </header>
 
@@ -193,11 +188,11 @@
             <form id="productForm" onsubmit="addProduct(event)" class="space-y-2.5">
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">ప్రొడక్ట్ పేరు:</label>
-                    <input type="text" id="prodName" required placeholder="ఉదా: పట్టు చీర" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                    <input type="text" id="prodName" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">కేటగిరీ:</label>
-                    <select id="prodCatalog" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50 font-bold">
+                    <select id="prodCatalog" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 font-bold">
                         <option value="SILK SAREES">SILK SAREES</option>
                         <option value="PATTU SAREES">PATTU SAREES</option>
                         <option value="WORK SAREES">WORK SAREES</option>
@@ -209,15 +204,15 @@
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">ధర (₹):</label>
-                        <input type="number" id="prodPrice" required placeholder="450" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodPrice" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">డిస్కౌంట్ (%):</label>
-                        <input type="number" id="prodDiscount" value="30" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodDiscount" value="30" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-gray-600 block">స్టాక్:</label>
-                        <input type="number" id="prodStock" required placeholder="10" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                        <input type="number" id="prodStock" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                     </div>
                 </div>
                 <div>
@@ -230,9 +225,9 @@
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">వివరణ:</label>
-                    <input type="text" id="prodDesc" placeholder="డీప్ కల్ర్స్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg outline-none bg-gray-50">
+                    <input type="text" id="prodDesc" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
-                <button type="submit" id="saveBtn" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg text-xs font-bold shadow transition">ప్రొడక్ట్ సేవ్ చేయి</button>
+                <button type="submit" id="saveBtn" class="w-full bg-rose-600 text-white py-2 rounded-lg text-xs font-bold shadow">ప్రొడక్ట్ సేవ్ చేయి</button>
             </form>
         </section>
         <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
@@ -253,3 +248,4 @@
     </div>
 </body>
 </html>
+
