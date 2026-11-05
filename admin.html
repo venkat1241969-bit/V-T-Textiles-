@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Venkat Textiles - Admin Panel</title>
+    <title>V T Textiles - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPOp8NtMBP09rNtCGe5-wRre6Y_Zt5g0M",
@@ -21,7 +20,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         window.addProduct = async function(event) {
             event.preventDefault();
@@ -31,32 +29,19 @@
             const price = document.getElementById('prodPrice').value;
             const discount = document.getElementById('prodDiscount').value;
             const stock = document.getElementById('prodStock').value;
+            const imageUrl = document.getElementById('prodImageUrl').value;
             const desc = document.getElementById('prodDesc').value;
-            
-            const imageFile = document.getElementById('prodImageFile').files[0];
-            const videoFile = document.getElementById('prodVideoFile').files[0];
 
-            if (!imageFile) {
-                alert("దయచేసి ఫోటోను ఎంచుకోండి!");
+            if (!imageUrl) {
+                alert("దయచేసి ఫోటో లింక్ (URL) ఇవ్వండి!");
                 return;
             }
 
             const btn = document.getElementById('saveBtn');
-            btn.innerText = "ఫైల్స్ అప్‌లోడ్ అవుతున్నాయి...";
+            btn.innerText = "సేవ్ అవుతోంది...";
             btn.disabled = true;
 
             try {
-                const imgRef = ref(storage, `products/images/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(imgRef, imageFile);
-                const imageUrl = await getDownloadURL(imgRef);
-
-                let videoUrl = "";
-                if (videoFile) {
-                    const vidRef = ref(storage, `products/videos/${Date.now()}_${videoFile.name}`);
-                    await uploadBytes(vidRef, videoFile);
-                    videoUrl = await getDownloadURL(vidRef);
-                }
-
                 await addDoc(collection(db, "items"), {
                     name,
                     catalog,
@@ -64,7 +49,7 @@
                     discount: Number(discount) || 30,
                     stock: Number(stock) || 1,
                     image: imageUrl,
-                    video: videoUrl,
+                    video: "",
                     description: desc,
                     status: Number(stock) > 0 ? "In Stock" : "Out of Stock",
                     timestamp: new Date().toISOString()
@@ -75,7 +60,7 @@
                 loadAdminProducts();
             } catch (e) {
                 console.error(e);
-                alert("అప్‌లోడ్ చేయడంలో లోపం ఏర్పడింది: " + e.message);
+                alert("లోపం ఏర్పడింది: " + e.message);
             } finally {
                 btn.innerText = "ప్రొడక్ట్ సేవ్ చేయి";
                 btn.disabled = false;
@@ -215,12 +200,8 @@
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] font-semibold text-gray-600 block">ఫోటో ఎంచుకోండి:</label>
-                    <input type="file" id="prodImageFile" accept="image/*" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-700 block mb-1">ప్రొడక్ట్ వీడియో (Optional):</label>
-                    <input type="file" id="prodVideoFile" accept="video/*" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
+                    <label class="text-[10px] font-semibold text-gray-600 block">ఫోటో లింక్ (Image URL ఇవ్వండి):</label>
+                    <input type="url" id="prodImageUrl" required placeholder="https://i.ibb.co/... లేదా ఫోటో లింక్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">వివరణ:</label>
