@@ -21,6 +21,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // గ్యాలరీ నుండి ఫోటోని సెలెక్ట్ చేసి Base64 రూపంలో మార్చుకోవడం
+        window.toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
         window.addProduct = async function(event) {
             event.preventDefault();
             
@@ -29,26 +37,30 @@
             const price = document.getElementById('prodPrice').value;
             const discount = document.getElementById('prodDiscount').value;
             const stock = document.getElementById('prodStock').value;
-            const imageUrl = document.getElementById('prodImageUrl').value;
             const desc = document.getElementById('prodDesc').value;
+            
+            const imageFile = document.getElementById('prodImageFile').files[0];
 
-            if (!imageUrl) {
-                alert("దయచేసి ఫోటో లింక్ (URL) ఇవ్వండి!");
+            if (!imageFile) {
+                alert("దయచేసి గ్యాలరీ నుండి ఫోటోను ఎంచుకోండి!");
                 return;
             }
 
             const btn = document.getElementById('saveBtn');
-            btn.innerText = "సేవ్ అవుతోంది...";
+            btn.innerText = "ఫోటో ప్రాసెస్ అవుతోంది...";
             btn.disabled = true;
 
             try {
+                // గ్యాలరీ ఫోటోని కోడ్‌గా మార్చి సేవ్ చేయడం (ఫైర్‌బేస్ స్టోరేజ్ అవసరం లేదు)
+                const base64Image = await window.toBase64(imageFile);
+
                 await addDoc(collection(db, "items"), {
                     name,
                     catalog,
                     price: Number(price),
                     discount: Number(discount) || 30,
                     stock: Number(stock) || 1,
-                    image: imageUrl,
+                    image: base64Image,
                     video: "",
                     description: desc,
                     status: Number(stock) > 0 ? "In Stock" : "Out of Stock",
@@ -200,8 +212,8 @@
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] font-semibold text-gray-600 block">ఫోటో లింక్ (Image URL ఇవ్వండి):</label>
-                    <input type="url" id="prodImageUrl" required placeholder="https://i.ibb.co/... లేదా ఫోటో లింక్" class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
+                    <label class="text-[10px] font-semibold text-gray-600 block">గ్యాలరీ నుండి ఫోటో ఎంచుకోండి:</label>
+                    <input type="file" id="prodImageFile" accept="image/*" required class="w-full border px-2.5 py-1.5 text-xs rounded-lg bg-gray-50">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-gray-600 block">వివరణ:</label>
