@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V T Textiles - Online Store</title>
+    <title>Venkat Textiles - Online Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPOp8NtMBP09rNtCGe5-wRre6Y_Zt5g0M",
@@ -74,7 +74,9 @@
                 html += `
                     <div class="bg-white rounded-2xl p-2.5 border border-gray-200 shadow-sm flex flex-col justify-between">
                         <div>
-                            <img src="${p.image}" class="w-full h-40 object-cover rounded-xl mb-2">
+                            <div class="w-full h-52 bg-gray-50 rounded-xl mb-2 flex items-center justify-center overflow-hidden border border-gray-100">
+                                <img src="${p.image}" class="w-full h-full object-contain">
+                            </div>
                             <h3 class="font-bold text-xs text-gray-900 truncate">${p.name}</h3>
                             <p class="text-[10px] text-gray-500 line-clamp-1">${p.description || ''}</p>
                             <div class="flex items-center gap-2 mt-1">
@@ -203,6 +205,71 @@
             }
         };
 
+        window.openMyOrdersModal = function() {
+            document.getElementById('myOrdersModal').classList.remove('hidden');
+        };
+
+        window.closeMyOrdersModal = function() {
+            document.getElementById('myOrdersModal').classList.add('hidden');
+        };
+
+        window.searchMyOrders = async function() {
+            const phone = document.getElementById('searchPhone').value.trim();
+            const container = document.getElementById('my-orders-result');
+            
+            if(!phone) {
+                alert("దయచేసి మీ ఫోన్ నంబర్ ఎంటర్ చేయండి!");
+                return;
+            }
+
+            container.innerHTML = `<p class="text-gray-500 text-center text-xs py-4">వెతుకుతోంది...</p>`;
+
+            try {
+                const q = query(collection(db, "orders"), where("phone", "==", phone));
+                const querySnapshot = await getDocs(q);
+
+                if(querySnapshot.empty) {
+                    container.innerHTML = `<p class="text-red-500 text-center text-xs py-4">ఈ నంబర్‌తో ఎలాంటి ఆర్డర్లు కనుగొనబడలేదు.</p>`;
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((docSnap) => {
+                    const ord = docSnap.data();
+                    let formattedDateTime = "సమయం అందుబాటులో లేదు";
+                    if (ord.timestamp) {
+                        formattedDateTime = new Date(ord.timestamp).toLocaleString('en-IN', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: true 
+                        });
+                    }
+
+                    html += `
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-1.5 shadow-sm">
+                            <div class="flex justify-between font-bold text-gray-900 border-b pb-1">
+                                <span>🆔 ${ord.orderId}</span>
+                                <span class="text-rose-600">₹${ord.total}</span>
+                            </div>
+                            <p class="text-[10px] text-rose-700 font-bold">📅 ఆర్డర్ చేసిన తేదీ & సమయం: ${formattedDateTime}</p>
+                            <p class="text-[10px] text-gray-600"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
+                            <p class="text-[10px] text-gray-600"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
+                            <div class="bg-white p-2 rounded border border-gray-100 mt-1">
+                                <p class="text-[10px] font-bold text-emerald-700">🚚 వేబిల్లు నంబర్ (Tracking): ${ord.waybill || 'త్వరలో అప్‌డేట్ చేయబడుతుంది'}</p>
+                                <p class="text-[10px] text-gray-600"><b>షిప్పింగ్ తేదీ:</b> ${ord.shippingDate || 'చర్చలలో ఉంది'}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
+            }
+        };
+
         window.onload = function() {
             loadStoreProducts();
         };
@@ -210,17 +277,20 @@
 </head>
 <body class="bg-gray-100 pb-16">
     <header class="bg-gray-900 text-white p-3 sticky top-0 z-40 shadow flex justify-between items-center">
-        <h1 class="text-sm font-black tracking-wide">V T TEXTILES</h1>
-        <div class="flex gap-2">
-            <button onclick="openCartModal()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1">
+        <div>
+            <h1 class="text-xs font-black tracking-wide text-rose-400">VENKAT TEXTILES</h1>
+            <p class="text-[9px] text-gray-300">మాచర్ల, పల్నాడు, A.P.</p>
+            <p class="text-[9px] text-gray-400 font-mono">GSTN: 37ADGPY4978G1ZR</p>
+        </div>
+        <div class="flex gap-1.5 items-center">
+            <button onclick="openCartModal()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1">
                 🛒 కార్ట్ (<span id="cart-count">0</span>)
             </button>
-            <button onclick="window.location.href='admin.html'" class="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1.5 rounded-lg text-xs font-bold">అడ్మిన్</button>
+            <button onclick="openMyOrdersModal()" class="bg-gray-800 hover:bg-gray-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-gray-700">నా ఆర్డర్లు</button>
         </div>
     </header>
 
     <main class="container mx-auto p-3 max-w-xl space-y-4">
-        <!-- Categories Filter -->
         <div class="flex gap-2 overflow-x-auto pb-1 text-xs">
             <button onclick="filterCategory('ALL', this)" class="cat-btn bg-rose-600 text-white px-3 py-1.5 rounded-full font-bold whitespace-nowrap shadow-sm">అన్నీ (All)</button>
             <button onclick="filterCategory('SILK SAREES', this)" class="cat-btn bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-bold whitespace-nowrap shadow-sm">Silk Sarees</button>
@@ -231,9 +301,18 @@
             <button onclick="filterCategory('READYMADE', this)" class="cat-btn bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full font-bold whitespace-nowrap shadow-sm">Readymade</button>
         </div>
 
-        <!-- Products Grid -->
         <section>
             <div id="store-products-list" class="grid grid-cols-2 gap-3"></div>
+        </section>
+
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 text-gray-700 text-xs space-y-2 mt-6">
+            <h2 class="font-black text-gray-900 text-sm border-b pb-1 uppercase">నిబంధనలు మరియు షరతులు (Terms & Conditions)</h2>
+            <ul class="list-disc pl-4 space-y-1 text-[11px] text-gray-600">
+                <li><b>ఉత్పత్తి రంగులు:</b> ఫోటోగ్రఫీ లైటింగ్ కారణంగా అసలు ప్రొడక్ట్ రంగులో చిన్నపాటి తేడాలు ఉండవచ్చు.</li>
+                <li><b>రిటర్న్ పాలసీ:</b> ప్రొడక్ట్‌లో డ్యామేజ్ ఉంటే మాత్రమే అన్-బాక్సింగ్ వీడియోతో 24 గంటలలోపు సంప్రదించాలి.</li>
+                <li><b>షిప్పింగ్:</b> ఆర్డర్ కన్ఫర్మ్ అయిన తర్వాత సాధారణంగా 3 నుండి 5 రోజులలోపు డిస్పాచ్ చేయబడుతుంది.</li>
+                <li><b>చెల్లింపులు:</b> అన్ని UPI పేమెంట్లు మా అధికారిక ఐడీ ద్వారా మాత్రమే స్వీకరించబడతాయి.</li>
+            </ul>
         </section>
     </main>
 
@@ -292,5 +371,6 @@
             </form>
         </div>
     </div>
-</body>
-</html>
+
+    <!-- My Orders Modal -->
+    <div id="myOrde
