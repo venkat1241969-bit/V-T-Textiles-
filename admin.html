@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPOp8NtMBP09rNtCGe5-wRre6Y_Zt5g0M",
@@ -21,7 +21,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // గ్యాలరీ నుండి ఫోటోని సెలెక్ట్ చేసి Base64 రూపంలో మార్చుకోవడం
         window.toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -38,7 +37,6 @@
             const discount = document.getElementById('prodDiscount').value;
             const stock = document.getElementById('prodStock').value;
             const desc = document.getElementById('prodDesc').value;
-            
             const imageFile = document.getElementById('prodImageFile').files[0];
 
             if (!imageFile) {
@@ -47,11 +45,10 @@
             }
 
             const btn = document.getElementById('saveBtn');
-            btn.innerText = "ఫోటో ప్రాసెస్ అవుతోంది...";
+            btn.innerText = "సేవ్ అవుతోంది...";
             btn.disabled = true;
 
             try {
-                // గ్యాలరీ ఫోటోని కోడ్‌గా మార్చి సేవ్ చేయడం (ఫైర్‌బేస్ స్టోరేజ్ అవసరం లేదు)
                 const base64Image = await window.toBase64(imageFile);
 
                 await addDoc(collection(db, "items"), {
@@ -136,22 +133,65 @@
                 querySnapshot.forEach((docSnap) => {
                     const ord = docSnap.data();
                     const docId = docSnap.id;
+                    
+                    let formattedDateTime = "సమయం అందుబాటులో లేదు";
+                    if (ord.timestamp) {
+                        formattedDateTime = new Date(ord.timestamp).toLocaleString('en-IN', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: true 
+                        });
+                    }
+
                     html += `
                         <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs space-y-2 shadow-sm">
                             <div class="flex justify-between items-center font-bold text-gray-900 border-b pb-1">
                                 <span>🆔 ${ord.orderId || 'N/A'}</span>
                                 <span class="text-rose-600">₹${ord.total}</span>
                             </div>
+                            <p class="text-[10px] text-rose-700 font-bold">📅 ఆర్డర్ చేసిన తేదీ & సమయం: ${formattedDateTime}</p>
                             <p class="text-[10px] text-gray-700"><b>పేరు:</b> ${ord.name} | <b>ఫోన్:</b> ${ord.phone}</p>
                             <p class="text-[10px] text-gray-700"><b>అడ్రస్:</b> ${ord.address} - ${ord.pincode}</p>
-                            <p class="text-[10px] text-gray-700"><b>UTR ID:</b> ${ord.utrNumber}</p>
-                            <button onclick="deleteOrder('${docId}')" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold">🗑️ ఆర్డర్ డిలీట్</button>
+                            <p class="text-[10px] text-gray-700 font-bold text-blue-800"><b>UTR ID:</b> ${ord.utrNumber}</p>
+                            
+                            <!-- వేబిల్లు మరియు షిప్పింగ్ తేదీ ఎంటర్ చేసే బాక్సులు -->
+                            <div class="bg-white p-2 rounded border border-gray-200 space-y-1.5 mt-2">
+                                <label class="text-[10px] font-bold text-gray-700 block">🚚 వేబిల్లు నంబర్ (Tracking):</label>
+                                <input type="text" id="waybill_${docId}" value="${ord.waybill || ''}" placeholder="వేబిల్లు నంబర్ రాయండి" class="w-full border px-2 py-1 text-[11px] rounded bg-gray-50">
+                                
+                                <label class="text-[10px] font-bold text-gray-700 block">📅 షిప్పింగ్ తేదీ:</label>
+                                <input type="text" id="shipDate_${docId}" value="${ord.shippingDate || ''}" placeholder="ఉదా: 06 Nov 2026" class="w-full border px-2 py-1 text-[11px] rounded bg-gray-50">
+                                
+                                <button onclick="updateTracking('${docId}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1 rounded text-[10px] font-bold shadow transition mt-1">ట్రాకింగ్ అప్‌డేట్ చేయి</button>
+                            </div>
+
+                            <button onclick="deleteOrder('${docId}')" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold mt-1">🗑️ ఆర్డర్ డిలీట్</button>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
             } catch(e) {
                 container.innerHTML = `<p class="text-red-500 text-center text-xs">లోపం: ${e.message}</p>`;
+            }
+        };
+
+        window.updateTracking = async function(docId) {
+            const waybill = document.getElementById(`waybill_${docId}`).value;
+            const shippingDate = document.getElementById(`shipDate_${docId}`).value;
+
+            try {
+                const orderRef = doc(db, "orders", docId);
+                await updateDoc(orderRef, {
+                    waybill: waybill,
+                    shippingDate: shippingDate
+                });
+                alert("ట్రాకింగ్ వివరాలు విజయవంతంగా అప్‌డేట్ చేయబడ్డాయి!");
+                loadAdminOrdersModal();
+            } catch(e) {
+                alert("అప్‌డేట్ చేయడంలో లోపం: " + e.message);
             }
         };
 
